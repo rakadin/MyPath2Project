@@ -1,13 +1,16 @@
 package com.example.mypath2project.composes
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,7 +45,7 @@ fun SearchingBar() {
     var text by rememberSaveable {
         mutableStateOf("")
     }
-    Surface(modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
+    Surface() {
         Row(modifier = Modifier
             .padding(horizontal = 2.dp, vertical = 6.dp)
             .fillMaxWidth(),
@@ -51,23 +54,28 @@ fun SearchingBar() {
         ) {
             TextField(
                 value = text,
-                onValueChange = {text = it},
+                onValueChange = {text = it
+                                Log.v("check_value","$text")},
                 placeholder = { Text(text = "Search...")},
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null,
-                    )
+                        modifier = Modifier.padding(horizontal = 16.dp))
                 },
-
-
-                )
-            Image(painter = painterResource(id = R.drawable.flower),
-                contentScale = ContentScale.Crop,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(start = 16.dp)
-                    .clip(CircleShape)
-                    .size(50.dp)
+                modifier = Modifier.clip(CircleShape)
+                    .fillMaxWidth(),
+                trailingIcon = {
+                    Image(
+                        painter = painterResource(id = R.drawable.flower),
+                        contentScale = ContentScale.Crop,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .clip(CircleShape)
+                            .size(30.dp)
+                    )
+                }
             )
+
         }
     }
 
