@@ -73,3 +73,30 @@ fun MyPath2ProjectTheme(
         content = content
     )
 }
+
+@Composable
+fun MyDarkTheme1(
+    content: @Composable () -> Unit
+
+) {
+    val colorScheme = DarkColorScheme
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content,
+        shapes = shapes
+    )
+}
+@Composable
+fun MyLightTheme1(
+    content: @Composable () -> Unit
+) {
+    val colorScheme = LightColorScheme
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content,
+        shapes = shapes
+
+    )
+}

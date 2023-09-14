@@ -7,18 +7,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -32,16 +43,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mypath2project.R
@@ -51,6 +66,9 @@ import com.example.mypath2project.viewmodels.EmailViewModel
 import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.Log
+import com.example.mypath2project.ui.theme.MyDarkTheme1
+import com.example.mypath2project.ui.theme.MyLightTheme1
+import kotlinx.coroutines.delay
 
 class ReplyContent : ComponentActivity() {
 
@@ -63,7 +81,25 @@ class ReplyContent : ComponentActivity() {
     @Composable
     fun EmailScreen(modifier: Modifier = Modifier,
                     emailViewModel: EmailViewModel = viewModel()) {
-        EmailList(list = emailViewModel.emails, changeStared = {email -> emailViewModel.changeIsStarChanged(email)})
+        var skeletonLoading by remember {
+            mutableStateOf(false)
+        }
+        suspend fun loadingSkeleton() {
+            if (!skeletonLoading) {
+                skeletonLoading = true
+                delay(3000L)
+                skeletonLoading = false
+            }
+        }
+        LaunchedEffect(Unit){
+            loadingSkeleton()
+        }
+        if(skeletonLoading){
+            LoadingRow()
+        }
+        else{
+            EmailList(list = emailViewModel.emails, changeStared = {email -> emailViewModel.changeIsStarChanged(email)})
+        }
     }
 
     @Composable
@@ -78,6 +114,21 @@ class ReplyContent : ComponentActivity() {
                     email -> EmailIemInfomation(email = email,
                         changeStared = {changeStared(email)})
             }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun PreviewEmailListInDarkMode() {
+        MyDarkTheme1 {
+            EmailScreen()
+        }
+    }
+    @Preview
+    @Composable
+    fun PreviewEmailListInLightMode() {
+        MyLightTheme1 {
+            EmailScreen()
         }
     }
     @Preview
@@ -153,15 +204,18 @@ class ReplyContent : ComponentActivity() {
             ) {
                 Text(
                     text = email.subject,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant                )
             }
             Row(
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 Text(
                     text = email.body,
-                    maxLines = if (isExpaned) Int.MAX_VALUE else 1
+                    maxLines = if (isExpaned) Int.MAX_VALUE else 2,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -214,8 +268,10 @@ class ReplyContent : ComponentActivity() {
                         contentDescription = null,
                         modifier = Modifier
                             .size(24.dp)
-                            .clickable(onClick = { changeStared()// save it in viewmodel
-                            isStarred =!isStarred})
+                            .clickable(onClick = {
+                                changeStared()// save it in viewmodel
+                                isStarred = !isStarred
+                            })
                     )
 
                 }
@@ -239,6 +295,51 @@ class ReplyContent : ComponentActivity() {
                 .size(40.dp)
                 .clip(CircleShape)
         )
+    }
+    /**
+     * Shows the loading state
+     */
+    @Composable
+    private fun LoadingRow() {
+        // Creates an `InfiniteTransition` that runs infinite child animation values.
+        val infiniteTransition = rememberInfiniteTransition()
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            // `infiniteRepeatable` repeats the specified duration-based `AnimationSpec` infinitely.
+            animationSpec = infiniteRepeatable(
+                // The `keyframes` animates the value by specifying multiple timestamps.
+                animation = keyframes {
+                    // One iteration is 1000 milliseconds.
+                    durationMillis = 1000
+                    // 0.7f at the middle of an iteration.
+                    0.7f at 500
+                },
+                // When the value finishes animating from 0f to 1f, it repeats by reversing the
+                // animation direction.
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+        Row(
+            modifier = Modifier
+                .heightIn(min = 64.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray.copy(alpha = alpha))
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp)
+                    .background(Color.LightGray.copy(alpha = alpha))
+            )
+        }
     }
 }
 

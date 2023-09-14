@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.example.mypath2project.composes.BottomNavigation
 import com.example.mypath2project.composes.ReplyContent
 import com.example.mypath2project.composes.SearchingBar
+import com.example.mypath2project.ui.theme.MyDarkTheme1
+import com.example.mypath2project.ui.theme.MyLightTheme1
 import com.example.mypath2project.ui.theme.MyPath2ProjectTheme
 
 class MainActivity : ComponentActivity() {
@@ -30,12 +32,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyPath2ProjectTheme() {
+            MyDarkTheme1() {
                 // A surface container using the 'background' color from the theme
-                }
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    //color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background
                 ) {
                     val replyContent : ReplyContent = ReplyContent()
                     Scaffold (
@@ -47,10 +48,10 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         bottomBar = { BottomNavigation() },
-
                         )
                 }
             }
+
+            }
         }
     }
-
