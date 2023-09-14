@@ -80,11 +80,11 @@ fun SearchingBar() {
         mutableStateOf("")
     }
     Surface(
-
+        modifier = Modifier.background(MaterialTheme.colorScheme.background)
     ) {
         Row(modifier = Modifier
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
 
@@ -103,7 +103,7 @@ fun SearchingBar() {
                     .border(
                         border = BorderStroke(
                             brush = Brush.linearGradient(
-                                colors = listOf(Color.Cyan, Color.Yellow),
+                                colors = listOf(Color.Green, Color.Yellow),
                                 start = Offset(0f, 0f),
                                 end = Offset(100f, 100f)
                             ),

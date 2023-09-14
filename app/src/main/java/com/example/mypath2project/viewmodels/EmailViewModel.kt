@@ -17,6 +17,9 @@ class EmailViewModel : ViewModel() {
             Log.v("check_click","clicked star ${email.isStarred}")
         }
     }
+    fun removeEmail(email: Email){
+        _email.remove(email)
+    }
 }
 object sampleEmailData{
     val emailSample= listOf<Email>(

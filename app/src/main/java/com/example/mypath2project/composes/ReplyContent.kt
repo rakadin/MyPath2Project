@@ -2,22 +2,28 @@ package com.example.mypath2project.composes
 
 import androidx.compose.ui.res.vectorResource
 import android.os.Bundle
+import android.view.VelocityTracker
 import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.splineBasedDecay
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,13 +58,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.mypath2project.R
 import com.example.mypath2project.data.Email
@@ -68,7 +80,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.Log
 import com.example.mypath2project.ui.theme.MyDarkTheme1
 import com.example.mypath2project.ui.theme.MyLightTheme1
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 class ReplyContent : ComponentActivity() {
 
@@ -98,7 +114,7 @@ class ReplyContent : ComponentActivity() {
             LoadingRow()
         }
         else{
-            EmailList(list = emailViewModel.emails, changeStared = {email -> emailViewModel.changeIsStarChanged(email)})
+            EmailList(list = emailViewModel.emails, changeStared = {email -> emailViewModel.changeIsStarChanged(email)}, onRemove = {email -> emailViewModel.removeEmail(email)})
         }
     }
 
@@ -106,13 +122,16 @@ class ReplyContent : ComponentActivity() {
     fun EmailList(
         list: List<Email>,
         changeStared: (Email) -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        onRemove:(Email)->Unit
     ) {
         LazyColumn(modifier = modifier){
             items( items = list,
                 key = {temp_email-> temp_email.id}){
                     email -> EmailIemInfomation(email = email,
-                        changeStared = {changeStared(email)})
+                        changeStared = {changeStared(email)},
+                        onRemove = {onRemove(email)})
+
             }
         }
     }
@@ -131,31 +150,18 @@ class ReplyContent : ComponentActivity() {
             EmailScreen()
         }
     }
-    @Preview
-    @Composable
-    fun PreviewEmailInfo() {
-        val email: Email = Email(
-            101,
-            "Quân",
-            "Package shipped",
-            "Media player have been shipped to your house so let get home and get that right now, Media player have been shipped to your house, Media player have been shipped to your house",
-            false,
-            true,
-            MailboxType.INBOX,
-            "20 mins ago"
-        )
-        EmailIemInfomation(email = email, changeStared = {email.isStarred} )
-    }
 
     @Composable
     fun EmailIemInfomation(
         email: Email,
         modifier: Modifier = Modifier.fillMaxSize(),
-        changeStared: () -> Unit
+        changeStared: () -> Unit,
+        onRemove:() -> Unit
     ) {
         Surface(color = MaterialTheme.colorScheme.primary) {
             Column(
                 modifier = modifier.padding(top = 6.dp)
+                    .swipeToDismiss { onRemove() }
             ) {
                 ContentItemHeader(email = email, changeStared = { changeStared() })
             }
@@ -340,6 +346,64 @@ class ReplyContent : ComponentActivity() {
                     .background(Color.LightGray.copy(alpha = alpha))
             )
         }
+    }
+    private fun Modifier.swipeToDismiss(
+        onDismissed: () -> Unit
+    ): Modifier = composed {
+        // This Animatable stores the horizontal offset for the element.
+        val offsetX = remember { Animatable(0f) }
+        pointerInput(Unit) {
+            // Used to calculate a settling position of a fling animation.
+            val decay = splineBasedDecay<Float>(this)
+            // Wrap in a coroutine scope to use suspend functions for touch events and animation.
+            coroutineScope {
+                while (true) {
+                    // Wait for a touch down event.
+                    val pointerId = awaitPointerEventScope { awaitFirstDown().id }
+                    // Interrupt any ongoing animation.
+                    offsetX.stop()
+                    // Prepare for drag events and record velocity of a fling.
+                    val velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                    // Wait for drag events.
+                    awaitPointerEventScope {
+                        horizontalDrag(pointerId) { change ->
+                            // Record the position after offset
+                            val horizontalDragOffset = offsetX.value + change.positionChange().x
+                            launch {
+                                // Overwrite the Animatable value while the element is dragged.
+                                offsetX.snapTo(horizontalDragOffset)
+                            }
+                            // Record the velocity of the drag.
+                            velocityTracker.addPosition(change.uptimeMillis, change.position)
+                            // Consume the gesture event, not passed to external
+                            change.consumePositionChange()
+                        }
+                    }
+                    // Dragging finished. Calculate the velocity of the fling.
+                    val velocity = velocityTracker.calculateVelocity().x
+                    // Calculate where the element eventually settles after the fling animation.
+                    val targetOffsetX = decay.calculateTargetValue(offsetX.value, velocity)
+                    // The animation should end as soon as it reaches these bounds.
+                    offsetX.updateBounds(
+                        lowerBound = -size.width.toFloat(),
+                        upperBound = size.width.toFloat()
+                    )
+                    launch {
+                        if (targetOffsetX.absoluteValue <= size.width) {
+                            // Not enough velocity; Slide back to the default position.
+                            offsetX.animateTo(targetValue = 0f, initialVelocity = velocity)
+                        } else {
+                            // Enough velocity to slide away the element to the edge.
+                            offsetX.animateDecay(velocity, decay)
+                            // The element was swiped away.
+                            onDismissed()
+                        }
+                    }
+                }
+            }
+        }
+            // Apply the horizontal offset to the element.
+            .offset { IntOffset(offsetX.value.roundToInt(), 0) }
     }
 }
 

@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
                         content = { innerPadding ->
                             Column {
                                 SearchingBar() // Place the SearchingBar inside the Column
-                                Spacer(modifier = Modifier.height(8.dp)) // Add spacing if needed
+                                //Spacer(modifier = Modifier.height(8.dp)) // Add spacing if needed
                                 replyContent.EmailScreen(Modifier.padding(innerPadding))
                             }
                         },
